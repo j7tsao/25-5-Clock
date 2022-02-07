@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
+        <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+        <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css">
+        <title>Pomodoro Timer</title>
+        <link rel="stylesheet" href="255Clock.css">
+    </head>
+    <body>
+        <div id="app">
+        </div>
+        <!-- // Access to XMLHttpRequest at 'file:///D:/Programming/freeCodeCamp/Front%20End%20Libraries%20Certification/prjs/25+5Clock/255Clock.js' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: http, data, chrome, chrome-extension, chrome-untrusted, https.
+        Chrome only accepts src in https form, but not from local.
+        <script type="text/babel" src="255Clock.js"></script>   -->
+
+        <script type="text/babel">
+                    
+            function LengthControl(props) {
+            if (props.id === 'Break Length') {
+                return (
+                <div className='wrapper'>
+                    <h2 className='title' id='break-label'>{props.id}</h2>
+                    <div className='control-panel'>
+                    <i 
+                        className="fas fa-chevron-circle-up"
+                        id='break-increment'
+                        onClick={props.breakIncrement}>
+                    </i>
+                    <h2 className='length' 
+                        id='break-length'>{props.breakLength}</h2>
+                    <i 
+                        className="fas fa-chevron-circle-down"
+                        id='break-decrement'
+                        onClick={props.breakDecrement}>
+                    </i>
+                    </div>
+                    <button 
+                    className="reset" 
+                    onClick={props.breakReset}>
+                    Reset
+                    </button>
+                </div>
+                )
+            }
+            return (
+                <div className='wrapper'>
+                <h2 className='title' id='session-label'>{props.id}</h2>
+                <div className='control-panel'>
+                    <i 
+                    className="fas fa-chevron-circle-up"
+                    id='session-increment'
+                    onClick={props.sessionIncrement}>
+                    </i>
+                    <h2 className='length'
+                    id="session-length">{props.sessionLength}</h2>
+                    <i 
+                    className="fas fa-chevron-circle-down"
+                    id='session-decrement'
+                    onClick={props.sessionDecrement}>
+                    </i>
+                </div>
+                <button 
+                    className="reset" 
+                    onClick={props.sessionReset}>
+                    Reset
+                </button>
+                </div>
+                )
+            }
+
+            function TimerPanel({
+                title,
+                timerNow,
+                breakNow,
+                minDisplay,
+                secDisplay,
+                startPause,
+                reset
+            }) {
+            // console.log(title)
+            // console.log(minDisplay())
+            // console.log(secDisplay())
+
+            return (
+                <div className='timer-wrapper'>
+                <div className='display-title' id="timer-label">{title}</div>
+                <div className='display-digits' id="time-left">
+                    {minDisplay().toString().padStart(2, '0')}
+                    :{secDisplay().toString().padStart(2, '0')}
+                </div>
+                <div className='control-keysets'>
+                    <i 
+                    class="fas fa-power-off"
+                    id="start_stop"
+                    onClick={startPause}
+                    ></i>
+                    <button 
+                    className="reset"
+                    id="reset"
+                    onClick={reset}
+                    >
+                    Reset
+                    </button>
+                </div>
+                </div>
+                )
+            }
+            // Move all the logic to manipulate the timer state into 
+            // the same component where the state is declared, 
+            // pass functions to children to callback to "inform" 
+            // the parent to do some "stuff".
+            function App() {
+            const initialBreakLen = 5
+            const initialSessionLen = 25
+
+            const [breakLength, setBreakLength] = React.useState(initialBreakLen)
+            const [sessionLength, setSessionLength] = React.useState(initialSessionLen)
+
+            const [title, setTitle] = React.useState('Session')
+
+            const initialBreak = 5 * 60
+            const initialTimer = 25 * 60
+
+            const [breakNow, setBreakNow] = React.useState(initialBreak)
+            const [timerNow, setTimerNow] = React.useState(initialTimer)
+            const [isStarted, setIsStarted] = React.useState(false)
+
+            const timerRef = React.useRef();
+            const breakRef = React.useRef();
+            const audioRef = React.useRef();
+
+            // To pass down to TimerPanel via props
+            const startPause = () => {
+                setIsStarted( value => !value )
+            }
+            const reset = () => {                   
+                setIsStarted(false)
+                setTitle('Session')
+                setTimerNow(initialTimer)
+                setSessionLength(initialSessionLen)
+                setBreakLength(initialBreakLen)
+                
+                // when the element with the id of "reset" is clicked
+                // The audio element with id of "beep" must stop playing 
+                // and be rewound to the beginning 
+                audioRef.current.pause()
+                audioRef.current.currentTime = 0
+            }
+
+            const minDisplay = () => {
+                return title === 'Session' 
+                ? Math.floor(timerNow / 60) 
+                : Math.floor(breakNow / 60)
+            }
+
+            const secDisplay = () => title === 'Session' 
+            ? Math.floor((timerNow % 60) * 100) / 100
+            : Math.floor((breakNow % 60) * 100) / 100
+
+            React.useEffect(() => {
+                // console.log('isStarted in App: ' + isStarted);
+                if (isStarted && title === 'Session') {
+                timerRef.current = setInterval(() => {
+                    // console.log('timerNow = ' + timerNow)
+                    // console.log('title = ' + title)
+                    if (timerNow > 0) {
+                    setTimerNow( t => t - 1 )
+                    }
+                    if (timerNow === 0) {
+                    setTitle('Break')
+                    setTimerNow(sessionLength * 60)
+                    }
+                }, 1000)
+                } else if (isStarted && title === 'Break') {
+                breakRef.current = setInterval(() => {
+                    // console.log('breakNow = ' + breakNow)
+                    // console.log('title = ' + title)
+                    if (breakNow > 0) {
+                    setBreakNow( t => t - 1 )
+                    }
+                    if (breakNow === 0) {
+                    setTitle('Session')
+                    setBreakNow(breakLength * 60)
+                    }
+                }, 1000)
+                }
+                // Clean up after this effect
+                // Probably in this case this should not apply here? 
+                // not sure yet
+                return () => {
+                title === 'Session' 
+                    ? clearInterval(timerRef.current) 
+                    : clearInterval(breakRef.current)
+                }
+                // Only re-run the effect if any of these changes
+            }, [isStarted, timerNow, breakNow, title]) 
+
+            // React.useEffect(() => {
+            //     console.log('timer: ', timerNow)
+            //     console.log('break: ', breakNow)
+            // }, [timerNow, breakNow])
+
+            React.useEffect(() => {
+                if (timerNow === 0 || breakNow === 0) {
+                if (isStarted) {
+                    audioRef.current.currentTime = 0
+                    audioRef.current.play()
+                    }
+                }
+            },[isStarted, timerNow, breakNow])
+
+            // LENGTH CONTROL FOR 'Break Length'
+            const breakIncrement = () => {
+                if (breakLength < 60 && !isStarted) {
+                setBreakLength( prevLength => prevLength + 1)
+                // setBreakNow( t => t + 60)
+                }
+            }
+            const breakDecrement = () => {
+                if (breakLength > 1 && !isStarted) {
+                setBreakLength( prevLength => prevLength - 1)
+                // setBreakNow( t => t - 60)
+                }
+            }
+            const breakReset = () => {
+                setBreakNow(initialBreak)
+                setBreakLength(initialBreakLen)
+            }
+
+            // timerNow changes along with sessionLength
+            // breakNow changes along with breakLength
+            React.useEffect(() => {
+                setTimerNow(sessionLength * 60)
+                setBreakNow(breakLength * 60)
+            }, [sessionLength, breakLength])
+
+            // LENGTH CONTROL FOR 'Session Length'
+            const sessionIncrement = () => {
+                if (sessionLength < 60 && !isStarted) {
+                // console.log(sessionLength)
+                setSessionLength( prevLength => prevLength + 1)
+                // console.log(timerNow)
+                // console.log(sessionLength)
+                // setTimerNow(sessionLength * 60)
+                }
+            }
+            const sessionDecrement = () => {
+                if (sessionLength > 1 && !isStarted) {
+                // console.log('Before: ' + sessionLength)
+                setSessionLength( prevLength => prevLength - 1)
+                // console.log(timerNow)
+                // console.log('After: ' + sessionLength)
+                // setTimerNow(sessionLength * 60)
+                }
+            }
+            const sessionReset = () => {
+                setIsStarted(false)
+                setTimerNow(initialTimer)
+                setSessionLength(initialSessionLen)
+            }
+
+            return (
+                <div className="container">
+                <h1>Pomodoro Timer</h1>
+                <div className='group'>
+                    <div className='block'>
+                    <LengthControl
+                        id='Break Length'
+                        breakIncrement={breakIncrement}
+                        breakDecrement={breakDecrement}
+                        breakReset={breakReset}
+                        breakLength={breakLength}
+                        />
+                    </div>
+                    <div className='block'>
+                    <LengthControl
+                        id='Session Length'
+                        sessionIncrement={sessionIncrement}
+                        sessionDecrement={sessionDecrement}
+                        sessionReset={sessionReset}
+                        sessionLength={sessionLength}
+                        />
+                    </div>
+                </div>
+                <div className='bottom-block'>
+                    <TimerPanel
+                    title={title}
+                    timerNow={timerNow}
+                    breakNow={breakNow}
+                    minDisplay={minDisplay}
+                    secDisplay={secDisplay}
+                    startPause={startPause}
+                    reset={reset}
+                    />
+                    <audio 
+                    id='beep'
+                    ref={audioRef}
+                    src="https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav"
+                    />
+                </div>
+                </div>
+                )
+            }
+
+            ReactDOM.render(
+            <App />,
+            document.getElementById('app')
+            );
+        </script>        
+    </body> 
+</html>
